@@ -23,7 +23,6 @@ WINDOW_TITLE = 'HR MANAGEMENT AND STAFF TRACKING SYSTEM USING FACIAL RECOGNITION
 LOGIN_ICON_PATH = 'images/admin_img.png'
 LOCKED_ICON_PATH = 'images/locked.png'
 UNLOCKED_ICON_PATH = 'images/unlocked.png'
-ADD_PIC_ICON_PATH = 'images/add_image.png'
 
 FONT_BOLD_22 = ('Calibri', 22, 'bold')
 FONT_BOLD_18 = ('Calibri', 18, 'bold')
@@ -74,8 +73,8 @@ class InitiateDatabase:
             relationship TEXT NOT NULL,
             marital_status TEXT NOT NULL,
             country TEXT NOT NULL,
-            face_id TEXT,
-            is_admin BOOLEAN DEFAULT FALSE
+            face_id TEXT NOT NULL,
+            is_admin BOOLEAN NOT NULL DEFAULT FALSE
         )
         """)
 
@@ -88,7 +87,7 @@ class InitiateDatabase:
             start_date TEXT NOT NULL,
             end_date TEXT NOT NULL,
             days REAL NOT NULL,
-            status TEXT DEFAULT 'pending',
+            status TEXT NOT NULL DEFAULT 'pending',
             reason TEXT,
             FOREIGN KEY (employee_id) REFERENCES employees (employee_id) ON DELETE CASCADE
         )
@@ -123,7 +122,8 @@ class InitiateDatabase:
             gross_pay REAL NOT NULL,
             total_deductions REAL,
             nett_pay REAL NOT NULL,
-            FOREIGN KEY (employee_id) REFERENCES employees (employee_id) ON DELETE CASCADE
+            FOREIGN KEY (employee_id) REFERENCES employees (employee_id) ON DELETE CASCADE,
+            UNIQUE (employee_id, salary_month, salary_year)
         )
         """)
 
@@ -145,13 +145,11 @@ class MainFrame:
 
 
 class LoginApp(MainFrame):
-
     def __init__(self, root):
         super().__init__(root)
         self.login_icon = PhotoImage(file=LOGIN_ICON_PATH)
         self.locked_icon = PhotoImage(file=LOCKED_ICON_PATH)
         self.unlocked_icon = PhotoImage(file=UNLOCKED_ICON_PATH)
-        self.add_pic_icon = PhotoImage(file=ADD_PIC_ICON_PATH)
         self.initialize_widgets()
 
     def forward_to_reset_password_page(self):
@@ -283,7 +281,7 @@ class Dashboard(MainFrame):
         self.update_time(time_lb)
 
         logged_as_user_lb = Label(self.dashboard_fm, fg=BG_COLOR, font=FONT_BOLD_26)
-        logged_as_user_lb.place(x=595, y=250)
+        logged_as_user_lb.pack(pady=250)
         self.get_logged_in_employee_name(logged_as_user_lb)
 
         attendance_btn = Button(self.dashboard_fm, text='Attendance\nManagement',
@@ -361,25 +359,25 @@ class Dashboard(MainFrame):
     def open_employee_mgmt(self):
         self.root.withdraw()
         new_root = Toplevel(self.root)
-        EmployeeMgmt(new_root, self.employeeID, self.is_admin)
+        EmployeeManagement(new_root, self.employeeID, self.is_admin)
 
     def open_attendance_mgmt(self):
         self.root.withdraw()
         new_root = Toplevel(self.root)
-        AttendanceMgmt(new_root, self.employeeID, self.is_admin)
+        AttendanceManagement(new_root, self.employeeID, self.is_admin)
 
     def open_leave_mgmt(self):
         self.root.withdraw()
         new_root = Toplevel(self.root)
-        LeaveMgmt(new_root, self.employeeID, self.is_admin)
+        LeaveManagement(new_root, self.employeeID, self.is_admin)
 
     def open_payroll_mgmt(self):
         self.root.withdraw()
         new_root = Toplevel(self.root)
-        PayRollMgmt(new_root, self.employeeID, self.is_admin)
+        PayrollManagement(new_root, self.employeeID, self.is_admin)
 
 
-class PayRollMgmt(MainFrame):
+class PayrollManagement(MainFrame):
     def __init__(self, root, employeeID, is_admin=False):
         super().__init__(root)
         self.employeeID = employeeID
@@ -412,7 +410,7 @@ class PayRollMgmt(MainFrame):
         self.var_unpaid_leave_deductions = StringVar()
         self.var_late_hours_charge = StringVar()
         self.var_empID.set(self.employeeID)
-        self.create_payroll_mgmt_fm()
+        self.initialize_widgets()
         self.search_employee()
         self.payroll_columns = [
             'payroll_id', 'employee_id', 'salary_month', 'salary_year', 'pay_date',
@@ -422,7 +420,7 @@ class PayRollMgmt(MainFrame):
             'total_deductions', 'nett_pay'
         ]
 
-    def create_payroll_mgmt_fm(self):
+    def initialize_widgets(self):
         self.payroll_mgmt_fm = Frame(self.root, highlightbackground=BG_COLOR,
                                      highlightthickness=3)
         self.payroll_mgmt_fm.pack(pady=40)
@@ -470,12 +468,12 @@ class PayRollMgmt(MainFrame):
         self.employee_id_entry = Entry(self.payroll_report_fm,
                                        font=('Calibri', 15),
                                        justify=LEFT, highlightcolor=BG_COLOR,
-                                       highlightbackground='gray', highlightthickness=1, textvariable=self.var_empID)
+                                       highlightbackground='gray',
+                                       highlightthickness=1, textvariable=self.var_empID)
         self.employee_id_entry.place(x=157, y=40, width=200, height=30)
 
         self.search_btn = Button(self.payroll_report_fm, text='Search', font=('Calibri', 15, 'bold'),
                                  width=14, bg=BG_COLOR, fg=FG_COLOR)
-
 
         self.name_lb = Label(self.payroll_report_fm, text='Name',
                              font=('Calibri', 15, 'bold'), fg='black')
@@ -527,8 +525,6 @@ class PayRollMgmt(MainFrame):
 
         scroll_x = ttk.Scrollbar(self.table_fm, orient=HORIZONTAL)
         scroll_y = ttk.Scrollbar(self.table_fm, orient=VERTICAL)
-
-
         self.payroll_table = ttk.Treeview(self.table_fm,
                                           column=('payroll_id', 'employee_id', 'name', 'salary_month', 'salary_year',
                                                   'pay_date', 'working_days', 'current_basic', 'overtime_charge',
@@ -537,7 +533,6 @@ class PayRollMgmt(MainFrame):
                                                   'gross_pay', 'total_deductions', 'nett_pay',),
                                           xscrollcommand=scroll_x.set,
                                           yscrollcommand=scroll_y.set)
-
         scroll_x.pack(side=BOTTOM, fill=X)
         scroll_y.pack(side=RIGHT, fill=Y)
 
@@ -650,7 +645,8 @@ class PayRollMgmt(MainFrame):
         self.allowance_entry = Entry(self.employee_salary_fm,
                                      font=('Calibri', 15),
                                      justify=LEFT, highlightcolor=BG_COLOR,
-                                     highlightbackground='gray', highlightthickness=1, textvariable=self.var_allowance)
+                                     highlightbackground='gray',
+                                     highlightthickness=1, textvariable=self.var_allowance)
         self.allowance_entry.place(x=120, y=160, width=160, height=30)
 
         self.incentives_lb = Label(self.employee_salary_fm, text='Incentives',
@@ -679,7 +675,8 @@ class PayRollMgmt(MainFrame):
                                           font=('Calibri', 15, 'bold'), fg='black')
         self.overtime_earnings_lb.place(x=10, y=280)
 
-        self.show_overtime_earnings_lb = Label(self.employee_salary_fm, textvariable=self.var_overtime_charge,
+        self.show_overtime_earnings_lb = Label(self.employee_salary_fm,
+                                               textvariable=self.var_overtime_charge,
                                                font=('Calibri', 15, 'bold'), fg='black')
         self.show_overtime_earnings_lb.place(x=120, y=280)
 
@@ -690,7 +687,8 @@ class PayRollMgmt(MainFrame):
         self.working_days_entry = Entry(self.employee_salary_fm,
                                         font=('Calibri', 15),
                                         justify=LEFT, highlightcolor=BG_COLOR,
-                                        highlightbackground='gray', highlightthickness=1, textvariable=self.var_working_days)
+                                        highlightbackground='gray',
+                                        highlightthickness=1, textvariable=self.var_working_days)
         self.working_days_entry.place(x=440, y=120, width=160, height=30)
 
         self.bonus_lb = Label(self.employee_salary_fm, text='Bonus',
@@ -721,7 +719,6 @@ class PayRollMgmt(MainFrame):
         self.show_overtime_rate_lb = Label(self.employee_salary_fm, textvariable=self.var_overtime_rates,
                                            font=('Calibri', 15, 'bold'), fg='black')
         self.show_overtime_rate_lb.place(x=440, y=240)
-
 
         self.deductions_lb = Label(self.employee_salary_fm, text='Deductions:',
                                    font=FONT_BOLD_22, fg='dark red')
@@ -779,7 +776,8 @@ class PayRollMgmt(MainFrame):
         self.gross_pay_entry = Entry(self.employee_salary_fm,
                                      font=('Calibri', 15),
                                      justify=LEFT, highlightcolor=BG_COLOR,
-                                     highlightbackground='gray', highlightthickness=1, textvariable=self.var_gross_pay)
+                                     highlightbackground='gray',
+                                     highlightthickness=1, textvariable=self.var_gross_pay)
         self.gross_pay_entry.place(x=440, y=360, width=160, height=30)
 
         self.total_deductions_lb = Label(self.employee_salary_fm, text='Total Deductions S$',
@@ -800,10 +798,11 @@ class PayRollMgmt(MainFrame):
         self.nett_pay_entry = Entry(self.employee_salary_fm,
                                     font=('Calibri', 15),
                                     justify=LEFT, highlightcolor=BG_COLOR,
-                                    highlightbackground='gray', highlightthickness=1, textvariable=self.var_nett_pay)
+                                    highlightbackground='gray',
+                                    highlightthickness=1, textvariable=self.var_nett_pay)
         self.nett_pay_entry.place(x=440, y=440, width=160, height=30)
 
-        save_pdf_btn = Button(self.employee_salary_fm, text='Save PDF', font=FONT_BOLD_18,
+        save_pdf_btn = Button(self.employee_salary_fm, text='Save as PDF', font=FONT_BOLD_18,
                            bg=BG_COLOR, fg=FG_COLOR, command=self.generate_pdf)
 
         calculate_btn = Button(self.employee_salary_fm, text='Calculate', font=FONT_BOLD_18,
@@ -829,7 +828,6 @@ class PayRollMgmt(MainFrame):
         self.logged_as_user_lb = Label(self.payroll_mgmt_fm, fg=BG_COLOR, font=('Calibri', 18, 'bold'))
         self.logged_as_user_lb.place(x=8, y=50)
         self.get_logged_in_employee_name(self.logged_as_user_lb)
-
 
     def generate_pdf(self):
         selected_item = self.payroll_table.selection()
@@ -890,7 +888,6 @@ class PayRollMgmt(MainFrame):
             pdf.set_fill_color(0, 0, 0)
             pdf.rect(10, pdf.get_y(), 190, 0.2, 'F')
 
-            # Employee Information Section
             pdf.set_fill_color(192, 192, 192)
             pdf.set_text_color(0, 0, 0)
             pdf.set_font("Arial", size=12)
@@ -911,24 +908,25 @@ class PayRollMgmt(MainFrame):
             pdf.ln(10)
             table_data = [
                 ("Earnings", "Amount"),
-                ("Basic Salary", current_basic),
-                ("Overtime Consultants", overtime_charge if overtime_charge != '0.0' else None),
-                ("Fixed Allowance", allowance if allowance != '0.0' else None),
-                ("Incentives", incentives if incentives != '0.0' else None),
-                ("Bonus", bonus if bonus != '0.0' else None),
-                ("Advanced Salary Payment", advanced_pay if advanced_pay != '0.0' else None),
-                ("Total Earnings", gross_pay),
+                ("Basic Salary", f"SGD {current_basic}"),
+                ("Overtime Consultants", f"SGD {overtime_charge}" if overtime_charge != '0.0' else None),
+                ("Fixed Allowance", f"SGD {allowance}" if allowance != '0.0' else None),
+                ("Incentives", f"SGD {incentives}" if incentives != '0.0' else None),
+                ("Bonus", f"SGD {bonus}" if bonus != '0.0' else None),
+                ("Advanced Salary Payment", f"SGD {advanced_pay}" if advanced_pay != '0.0' else None),
+                ("Total Earnings", f"SGD {gross_pay}"),
                 ("Deductions", "Amount"),
-                ("Advanced Salary Deductions", advanced_deductions if advanced_deductions != '0.0' else None),
-                ("Unpaid Leave", unpaid_leave_deductions if unpaid_leave_deductions != '0.0' else None),
-                ("Late Deductions", late_deductions if late_deductions != '0.0' else None),
-                ("Total Deductions", total_deductions),
+                ("Advanced Salary Deductions", f"SGD {advanced_deductions}" if advanced_deductions != '0.0' else None),
+                ("Unpaid Leave", f"SGD {unpaid_leave_deductions}" if unpaid_leave_deductions != '0.0' else None),
+                ("Late Deductions", f"SGD {late_deductions}" if late_deductions != '0.0' else None),
+                ("Total Deductions", f"SGD {total_deductions}"),
                 ("Net Amount", f"SGD {nett_pay}")
             ]
             table_data = [row_data for row_data in table_data if row_data[1] is not None]
             for row_data in table_data:
                 label, value = row_data
-                if label == "Earnings" or label == "Deductions" or label == "Total Earnings" or label == "Net Amount":
+                if (label == "Earnings" or label == "Deductions" or
+                        label == "Total Earnings" or label == "Net Amount" or label == "Total Deductions"):
                     pdf.set_fill_color(192, 192, 192)
                     pdf.set_text_color(0, 0, 0)
                     pdf.set_font("Arial", style="B", size=12)
@@ -944,7 +942,10 @@ class PayRollMgmt(MainFrame):
             pdf.set_font("Arial", size=10)
             current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             pdf.cell(0, 10, txt=f"Printed on: {current_date}", align="L")
-            pdf.ln(6)
+            pdf.ln(5)
+            pdf.set_fill_color(0, 0, 0)
+            pdf.rect(10, pdf.get_y() + 5, 190, 0.2, 'F')
+            pdf.ln(5)
             pdf.set_font("Arial", size=10)
             pdf.cell(0, 10, txt="Computer Generated Payslip - No Signature Required", align="C")
 
@@ -978,13 +979,47 @@ class PayRollMgmt(MainFrame):
             self.var_deductions.set(data[17])
             self.var_nett_pay.set(data[18])
 
+        with sqlite3.connect('employees.db') as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT department, designation, joining_date, country, email, salary "
+                           "FROM employees WHERE employee_id = ?", (int(data[1]),))
+            employee_data = cursor.fetchone()
+        self.var_department.set(f'{employee_data[0]}')
+        self.var_designation.set(f'{employee_data[1]}')
+        self.var_doj.set(f'{employee_data[2]}')
+        self.var_nationality.set(f'{employee_data[3]}')
+        self.var_email.set(f'{employee_data[4]}')
+        basic_salary = float(employee_data[5]) if employee_data[5] else 0
+        if basic_salary <= 4500:
+            hourly_basic_rate = (basic_salary * 12) / (52 * 44)
+            ot_rate = hourly_basic_rate * 1.5
+            formatted_rate = f"S$ {ot_rate:.2f}"
+        else:
+            formatted_rate = "Not entitled"
+        self.show_overtime_rate_lb.config(text=formatted_rate)
+        self.var_overtime_rates.set(formatted_rate)
+
     def calculate_pay(self):
         try:
-            monthly_basic_salary = float(self.var_salary.get() if self.var_salary.get() else 0)
+            if not self.var_salary.get():
+                messagebox.showerror("Error", "Please select one employee before do calculation.")
+                return
 
+            if not self.var_working_days.get():
+                messagebox.showerror("Error", "Please input working days for salary calculation.")
+                return
+
+            monthly_basic_salary = float(self.var_salary.get() if self.var_salary.get() else 0)
             hourly_basic_rate = (monthly_basic_salary * 12) / (52 * 44)
 
-            overtime_hours = float(self.var_overtime_hours.get() if self.var_overtime_hours.get() else 0)
+            if monthly_basic_salary <= 4500:
+                hourly_basic_rate = (monthly_basic_salary * 12) / (52 * 44)
+                ot_rate = hourly_basic_rate * 1.5
+                overtime_pay = ot_rate * float(self.var_overtime_hours.get() if self.var_overtime_hours.get() else 0)
+            else:
+                overtime_pay = 0
+
+            advanced_pay = float(self.var_advanced_pay.get() if self.var_advanced_pay.get() else 0)
             allowance = float(self.var_allowance.get() if self.var_allowance.get() else 0)
             bonus = float(self.var_bonus.get() if self.var_bonus.get() else 0)
             advanced_pay_deduction = float(
@@ -993,23 +1028,19 @@ class PayRollMgmt(MainFrame):
             unpaid_leave = float(self.var_unpaid_leave.get() if self.var_unpaid_leave.get() else 0)
             late_hours = float(self.var_late_hours.get() if self.var_late_hours.get() else 0)
 
-            overtime_pay = hourly_basic_rate * 1.5 * overtime_hours
             daily_rate = float(monthly_basic_salary) / float(self.var_working_days.get())
-
             unpaid_leave_deduction = unpaid_leave * daily_rate
-
             late_hour_deduction = hourly_basic_rate * 0.5 * late_hours
 
-            gross_pay = monthly_basic_salary + allowance + bonus + incentives + overtime_pay
-
+            gross_pay = monthly_basic_salary + allowance + bonus + incentives + overtime_pay + advanced_pay
             total_deductions = advanced_pay_deduction + unpaid_leave_deduction + late_hour_deduction
-
             net_pay = gross_pay - total_deductions
 
-            overtime_pay = round(gross_pay, 2)
+            overtime_pay = round(overtime_pay, 2)
             gross_pay = round(gross_pay, 2)
             total_deductions = round(total_deductions, 2)
             net_pay = round(net_pay, 2)
+
             self.var_overtime_charge.set(f'S$ {str(overtime_pay)}')
             self.gross_pay_entry.delete(0, END)
             self.gross_pay_entry.insert(0, str(gross_pay))
@@ -1017,12 +1048,10 @@ class PayRollMgmt(MainFrame):
             self.total_deductions_entry.insert(0, str(total_deductions))
             self.nett_pay_entry.delete(0, END)
             self.nett_pay_entry.insert(0, str(net_pay))
-
         except ValueError:
             messagebox.showerror('Error', 'Please ensure all filled fields have correct values')
 
     def save_payroll(self):
-        # Get values from the UI
         employee_id = self.employee_id_entry.get()
         pay_date = self.var_payroll_date.get()
         working_days = self.var_working_days.get()
@@ -1034,42 +1063,38 @@ class PayRollMgmt(MainFrame):
             messagebox.showerror('Error', 'Please select salary month and salary year before save!')
             return
 
-        # Check if bonus is empty and set it to 0 if it is
+        if employee_id == self.employeeID:
+            messagebox.showerror('Error', 'You cannot save salary for yourself!')
+            return
+
         bonus = self.var_bonus.get()
         if not bonus:
             bonus = 0
 
-        # Check if allowance is empty and set it to 0 if it is
         allowance = self.var_allowance.get()
         if not allowance:
             allowance = 0
 
-        # Check if incentives is empty and set it to 0 if it is
         incentives = self.var_incentives.get()
         if not incentives:
             incentives = 0
 
-        # Check if overtime hours is empty and set it to 0 if it is
         overtime_hours = self.var_overtime_hours.get()
         if not overtime_hours:
             overtime_hours = 0
 
-        # Check if advance pay is empty and set it to 0 if it is
         advanced_pay = self.var_advanced_pay.get()
         if not advanced_pay:
             advanced_pay = 0
 
-        # Check if advance pay deductions is empty and set it to 0 if it is
         advanced_pay_deductions = self.var_advanced_pay_deductions.get()
         if not advanced_pay_deductions:
             advanced_pay_deductions = 0
 
-        # Check if unpaid leave is empty and set it to 0 if it is
         unpaid_leave_deductions = self.var_unpaid_leave.get()
         if not unpaid_leave_deductions:
             unpaid_leave_deductions = 0
 
-        # Check if late hours is empty and set it to 0 if it is
         late_deductions = self.var_late_hours.get()
         if not late_deductions:
             late_deductions = 0
@@ -1077,15 +1102,17 @@ class PayRollMgmt(MainFrame):
         gross_pay = self.gross_pay_entry.get()
         total_deductions = self.total_deductions_entry.get()
         net_pay = self.nett_pay_entry.get()
+        hourly_basic_rate = (float(basic) * 12) / (52 * 44)
 
-        # Check if gross pay and total deductions are calculated
         if not gross_pay or not total_deductions:
             messagebox.showerror('Error', 'Please calculate the payroll before saving.')
             return
 
-        # Calculate overtime charge (rounded to 2 decimal places)
-        hourly_basic_rate = (float(basic) * 12) / (52 * 44)
-        overtime_charge = round(hourly_basic_rate * 1.5 * float(overtime_hours), 2)
+        if float(basic) <= 4500.0:
+            hourly_basic_rate = (float(basic) * 12) / (52 * 44)
+            overtime_charge = round(hourly_basic_rate * 1.5 * float(overtime_hours), 2)
+        else:
+            overtime_charge = 0.0
 
         # Calculate unpaid leave deductions (rounded to 2 decimal places)
         daily_rate = float(basic) / float(working_days)
@@ -1097,7 +1124,8 @@ class PayRollMgmt(MainFrame):
         with sqlite3.connect('employees.db') as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT COUNT(*) FROM payrolls WHERE employee_id = ? AND salary_month = ? AND salary_year = ?",
+                "SELECT COUNT(*) FROM payrolls "
+                "WHERE employee_id = ? AND salary_month = ? AND salary_year = ?",
                 (employee_id, salary_month, salary_year))
             count = cursor.fetchone()[0]
 
@@ -1107,40 +1135,46 @@ class PayRollMgmt(MainFrame):
                                  'already exists for this employee.')
             return
 
-        # Insert data into the database
         with sqlite3.connect('employees.db') as conn:
             cursor = conn.cursor()
-            cursor.execute(
-                "INSERT INTO payrolls (employee_id, "
-                "salary_month,"
-                "salary_year,"
-                "pay_date, "
-                "working_days, "
-                "current_basic, "
-                "overtime_charge, "
-                "allowance, "
-                "incentives, "
-                "bonus, "
-                "advanced_pay, "
-                "advanced_deductions, "
-                "unpaid_leave_deductions, "
-                "late_deductions, "
-                "gross_pay, "
-                "total_deductions, "
-                "nett_pay) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (employee_id, salary_month, salary_year, pay_date, working_days,
-                 basic, overtime_charge, allowance,
-                 incentives, bonus, advanced_pay, advanced_pay_deductions, unpaid_leave_deductions,
-                 late_deductions, gross_pay, total_deductions, net_pay))
-            conn.commit()
-            self.load_payroll_report()
-
-        messagebox.showinfo('Success', 'Payroll saved successfully!')
+            try:
+                cursor.execute(
+                    "INSERT INTO payrolls (employee_id, "
+                    "salary_month,"
+                    "salary_year,"
+                    "pay_date, "
+                    "working_days, "
+                    "current_basic, "
+                    "overtime_charge, "
+                    "allowance, "
+                    "incentives, "
+                    "bonus, "
+                    "advanced_pay, "
+                    "advanced_deductions, "
+                    "unpaid_leave_deductions, "
+                    "late_deductions, "
+                    "gross_pay, "
+                    "total_deductions, "
+                    "nett_pay) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (employee_id, salary_month, salary_year, pay_date, working_days,
+                     basic, overtime_charge, allowance,
+                     incentives, bonus, advanced_pay, advanced_pay_deductions, unpaid_leave_deductions,
+                     late_deductions, gross_pay, total_deductions, net_pay))
+                conn.commit()
+                self.load_payroll_report()
+                messagebox.showinfo('Success', 'Payroll saved successfully!')
+            except sqlite3.IntegrityError:
+                messagebox.showerror('Error',
+                                     'A payroll record for the selected month '
+                                     'and year already exists for this employee.')
 
     def clear_fields(self):
-        fields = [self.employee_id_entry, self.allowance_entry, self.bonus_entry, self.advanced_pay_deductions_entry,
-                  self.unpaid_leave_entry, self.overtime_hour_entry, self.gross_pay_entry, self.total_deductions_entry,
-                  self.nett_pay_entry, self.working_days_entry, self.late_hour_entry,
+        fields = [self.employee_id_entry, self.allowance_entry, self.bonus_entry,
+                  self.advanced_pay_deductions_entry,
+                  self.unpaid_leave_entry, self.overtime_hour_entry,
+                  self.gross_pay_entry, self.total_deductions_entry,
+                  self.nett_pay_entry, self.working_days_entry,
+                  self.late_hour_entry,
                   self.advanced_pay_entry, self.incentives_entry]
         for field in fields:
             field.delete(0, END)
@@ -1154,6 +1188,7 @@ class PayRollMgmt(MainFrame):
         self.var_email.set('')
         self.var_salary.set('')
         self.var_overtime_rates.set('')
+        self.var_overtime_charge.set('')
 
     def load_payroll_report(self):
         with sqlite3.connect('employees.db') as conn:
@@ -1183,7 +1218,6 @@ class PayRollMgmt(MainFrame):
                 for row in rows:
                     self.payroll_table.insert('', 'end', values=row)
 
-
     def get_current_date(self):
         today = datetime.today()
         current_date = today.strftime('%d-%m-%Y')
@@ -1199,7 +1233,6 @@ class PayRollMgmt(MainFrame):
                 'country, email, salary FROM employees WHERE employee_id = ?',
                 (emp_id,))
             result = cursor.fetchone()
-
         if result:
             self.var_name.set(result[0] if result[0] else "")
             self.var_department.set(result[1] if result[1] else "")
@@ -1208,11 +1241,27 @@ class PayRollMgmt(MainFrame):
             self.var_nationality.set(result[4] if result[4] else "")
             self.var_email.set(result[5] if result[5] else "")
             self.var_salary.set(str(result[6]) if result[6] else "")
-            hourly_basic_rate = (float(self.var_salary.get() if self.var_salary.get() else 0) * 12) / (52 * 44)
-            ot_rate = hourly_basic_rate * 1.5
-            formatted_rate = f"S$ {ot_rate:.2f}"
+            basic_salary = float(result[6]) if result[6] else 0
+            if basic_salary <= 4500:
+                hourly_basic_rate = (basic_salary * 12) / (52 * 44)
+                ot_rate = hourly_basic_rate * 1.5
+                formatted_rate = f"S$ {ot_rate:.2f}"
+            else:
+                formatted_rate = "Not entitled"
             self.show_overtime_rate_lb.config(text=formatted_rate)
             self.var_overtime_rates.set(formatted_rate)
+            self.var_overtime_charge.set('')
+            self.combo_month.current(0)
+            self.combo_year.current(0)
+            fields = [self.allowance_entry, self.bonus_entry,
+                      self.advanced_pay_deductions_entry,
+                      self.unpaid_leave_entry, self.overtime_hour_entry,
+                      self.gross_pay_entry, self.total_deductions_entry,
+                      self.nett_pay_entry, self.working_days_entry,
+                      self.late_hour_entry,
+                      self.advanced_pay_entry, self.incentives_entry]
+            for field in fields:
+                field.delete(0, END)
         else:
             messagebox.showerror('Error', 'Employee not found')
 
@@ -1230,7 +1279,7 @@ class PayRollMgmt(MainFrame):
         Dashboard(self.root, self.employeeID, self.is_admin)
 
 
-class LeaveMgmt(MainFrame):
+class LeaveManagement(MainFrame):
     def __init__(self, root, employeeID, is_admin=False):
         super().__init__(root)
         self.employeeID = employeeID
@@ -1240,7 +1289,7 @@ class LeaveMgmt(MainFrame):
         self.var_name = StringVar()
         self.var_leave_type = StringVar()
         self.var_apply_date = StringVar()
-        self.var_current_date = StringVar()
+        self.var_leave_balance = StringVar()
         self.var_start_date = StringVar()
         self.var_end_date = StringVar()
         self.var_status = StringVar()
@@ -1248,10 +1297,10 @@ class LeaveMgmt(MainFrame):
         self.var_empID.set(self.employeeID)
         self.var_name.set(self.get_employee_name())
         self.var_apply_date.set(self.get_current_date())
-        self.var_current_date.set(self.show_leave_balance())
-        self.widgets()
+        self.var_leave_balance.set(self.show_leave_balance())
+        self.initialize_widgets()
 
-    def widgets(self):
+    def initialize_widgets(self):
         self.leave_mgmt_fm = Frame(self.root, highlightbackground=BG_COLOR,
                                    highlightthickness=3)
         header_lb = Label(self.leave_mgmt_fm,
@@ -1354,7 +1403,6 @@ class LeaveMgmt(MainFrame):
 
         self.leave_table.pack(fill=BOTH, expand=1)
         self.leave_table.bind('<ButtonRelease>', self.get_cursor)
-        # self.leave_table.bind('<<TreeviewSelect>>', lambda e: self.show_leave_balance())
         self.load_leave_report()
 
         self.leave_mgmt_fm.pack(pady=40)
@@ -1673,7 +1721,8 @@ class LeaveMgmt(MainFrame):
             return
 
         if status == 'pending':
-            confirmation = messagebox.askyesno('Confirmation', 'Are you sure you want to approve this leave?')
+            confirmation = messagebox.askyesno('Confirmation',
+                                               'Are you sure you want to approve this leave?')
             if not confirmation:
                 return
 
@@ -1894,7 +1943,7 @@ class LeaveMgmt(MainFrame):
         self.start_date_entry.delete(0, END)
         self.end_date_entry.delete(0, END)
         self.var_apply_date.set(self.get_current_date())
-        self.var_current_date.set(self.show_leave_balance())
+        self.var_leave_balance.set(self.show_leave_balance())
         self.var_status.set('')
 
     def return_to_dashboard(self):
@@ -1902,24 +1951,24 @@ class LeaveMgmt(MainFrame):
         Dashboard(self.root, self.employeeID, self.is_admin)
 
 
-class AttendanceMgmt(MainFrame):
+class AttendanceManagement(MainFrame):
     def __init__(self, root, employeeID, is_admin=False):
         super().__init__(root)
         self.employeeID = employeeID
         self.is_admin = is_admin
-        self.create_attendance_mgmt_fm()
+        self.initialize_widgets()
 
-    def create_attendance_mgmt_fm(self):
+    def initialize_widgets(self):
         self.attendance_mgmt_fm = Frame(self.root, highlightbackground=BG_COLOR,
                                         highlightthickness=3)
         self.attendance_mgmt_fm.pack(pady=40)
         self.attendance_mgmt_fm.pack_propagate(False)
         self.attendance_mgmt_fm.configure(width=1340, height=755)
 
-        header_lb = Label(self.attendance_mgmt_fm,
-                          text='ATTENDANCE MANAGEMENT',
-                          bg=BG_COLOR, fg=FG_COLOR, font=FONT_BOLD_22)
-        header_lb.place(x=0, y=0, width=1340, height=50)
+        self.header_lb = Label(self.attendance_mgmt_fm,
+                               text='ATTENDANCE MANAGEMENT',
+                               bg=BG_COLOR, fg=FG_COLOR, font=FONT_BOLD_22)
+        self.header_lb.place(x=0, y=0, width=1340, height=50)
 
         return_to_dashboard_btn = Button(self.attendance_mgmt_fm, text='⬅ Return to Dashboard',
                                          bg=BG_COLOR, fg=FG_COLOR,
@@ -1927,9 +1976,9 @@ class AttendanceMgmt(MainFrame):
                                          bd=0, command=self.return_to_dashboard)
         return_to_dashboard_btn.place(x=0, y=0)
 
-        logged_as_user_lb = Label(self.attendance_mgmt_fm, fg=BG_COLOR, font=FONT_BOLD_18)
-        logged_as_user_lb.place(x=8, y=50)
-        self.get_logged_in_employee_name(logged_as_user_lb)
+        self.logged_as_user_lb = Label(self.attendance_mgmt_fm, fg=BG_COLOR, font=FONT_BOLD_18)
+        self.logged_as_user_lb.place(x=8, y=50)
+        self.get_logged_in_employee_name(self.logged_as_user_lb)
 
         self.attendance_report_fm = Frame(self.attendance_mgmt_fm, highlightbackground='#008080',
                                           highlightthickness=1)
@@ -1980,26 +2029,27 @@ class AttendanceMgmt(MainFrame):
                                highlightthickness=1)
         self.search_fm.place(x=0, y=510, width=618, height=48)
 
-        search_by = Label(self.search_fm, text='Search By:',
-                          font=('Calibri', 13, 'bold'), bg='red', fg=FG_COLOR,
-                          width=8)
-        search_by.grid(row=0, column=0, sticky=W, padx=2)
+        self.search_by = Label(self.search_fm, text='Search By:',
+                               font=('Calibri', 13, 'bold'), bg='red', fg=FG_COLOR,
+                               width=8)
+        self.search_by.grid(row=0, column=0, sticky=W, padx=2)
 
-        com_text_search = ttk.Combobox(self.search_fm, state='readonly',
-                                       font=('Calibri', 11, 'bold'),
-                                       width=14, height=40)
-        com_text_search['value'] = ('Search Option', 'employee_id', 'attendance_type')
-        com_text_search.current(0)
-        com_text_search.grid(row=0, column=1, sticky=W, padx=5)
+        self.com_text_search = ttk.Combobox(self.search_fm, state='readonly',
+                                            font=('Calibri', 11, 'bold'),
+                                            width=14, height=40)
+        self.com_text_search['value'] = ('Search Option', 'employee_id', 'attendance_type')
+        self.com_text_search.current(0)
+        self.com_text_search.grid(row=0, column=1, sticky=W, padx=5)
 
-        txt_search_entry = ttk.Entry(self.search_fm, width=20,
-                                     font=('Calibri', 11, 'bold'),
-                                     justify=LEFT)
-        txt_search_entry.grid(row=0, column=2, padx=5)
+        self.txt_search_entry = ttk.Entry(self.search_fm, width=20,
+                                          font=('Calibri', 11, 'bold'),
+                                          justify=LEFT)
+        self.txt_search_entry.grid(row=0, column=2, padx=5)
 
         search_btn = Button(self.search_fm, text='Search', font=('Calibri', 11, 'bold'),
                             width=8, bg=BG_COLOR, fg=FG_COLOR,
-                            command=lambda: self.search_data(com_text_search.get(), txt_search_entry.get()))
+                            command=lambda: self.search_data(self.com_text_search.get(),
+                                                             self.txt_search_entry.get()))
         search_btn.grid(row=0, column=3, padx=5)
 
         show_all_btn = Button(self.search_fm, text='Show All', font=('Calibri', 11, 'bold'),
@@ -2034,7 +2084,7 @@ class AttendanceMgmt(MainFrame):
                               font=('Calibri', 30, 'bold'), bd=0,
                               command=lambda:
                               self.capture_attendance(self.employeeID,
-                                                      combo_location.get(),
+                                                      self.combo_location.get(),
                                                       'Clock in'))
         clock_in_btn.place(x=60, y=90, width=200, height=140)
 
@@ -2043,7 +2093,7 @@ class AttendanceMgmt(MainFrame):
                                font=('Calibri', 30, 'bold'), bd=0,
                                command=lambda:
                                self.capture_attendance(self.employeeID,
-                                                       combo_location.get(),
+                                                       self.combo_location.get(),
                                                        'Clock Out'))
         clock_out_btn.place(x=360, y=90, width=200, height=140)
 
@@ -2051,27 +2101,27 @@ class AttendanceMgmt(MainFrame):
 
         self.mark_attendance_fm.place(x=0, y=280, width=618, height=268)
 
-        time_lb = Label(self.attendance_portal_fm, fg='black', font=('Calibri', 16, 'bold'))
-        time_lb.place(x=215, y=50)
-        self.update_time(time_lb)
+        self.time_lb = Label(self.attendance_portal_fm, fg='black', font=('Calibri', 16, 'bold'))
+        self.time_lb.place(x=215, y=50)
+        self.update_time(self.time_lb)
 
-        location_lb = Label(self.attendance_portal_fm, text='Select Working Location',
-                            font=('Calibri', 16, 'bold'), fg='black', justify=CENTER
-                            )
-        location_lb.place(x=200, y=160)
+        self.location_lb = Label(self.attendance_portal_fm, text='Select Working Location',
+                                 font=('Calibri', 16, 'bold'), fg='black', justify=CENTER
+                                 )
+        self.location_lb.place(x=200, y=160)
 
-        combo_location = ttk.Combobox(self.attendance_portal_fm,
-                                      font=('Calibri', 14),
-                                      width=17, state='readonly', justify=CENTER
-                                      )
-        combo_location['value'] = ('Select Working Location', 'SGH', 'NHCS', 'NDCS', 'NCCS',
-                                   'Connection One', 'EGH', 'Tampines Plaza', 'SKCH', 'SCH',
-                                   'OCH', 'KKH', 'SKH', 'Bedok Polyclinic', 'Sengkang Polyclinic',
-                                   'Tampines Polyclinic', 'Punggol Polyclinic', 'Outram Polyclinic',
-                                   'Bukit Merah Polyclinic', 'Marine Parade Polyclinic', 'Eunos Polyclinic',
-                                   'Pasir Ris Polyclinic')
-        combo_location.current(0)
-        combo_location.place(x=180, y=200, width=265, height=30)
+        self.combo_location = ttk.Combobox(self.attendance_portal_fm,
+                                           font=('Calibri', 14),
+                                           width=17, state='readonly', justify=CENTER
+                                           )
+        self.combo_location['value'] = ('Select Working Location', 'SGH', 'NHCS', 'NDCS', 'NCCS',
+                                        'Connection One', 'EGH', 'Tampines Plaza', 'SKCH', 'SCH',
+                                        'OCH', 'KKH', 'SKH', 'Bedok Polyclinic', 'Sengkang Polyclinic',
+                                        'Tampines Polyclinic', 'Punggol Polyclinic', 'Outram Polyclinic',
+                                        'Bukit Merah Polyclinic', 'Marine Parade Polyclinic', 'Eunos Polyclinic',
+                                        'Pasir Ris Polyclinic')
+        self.combo_location.current(0)
+        self.combo_location.place(x=180, y=200, width=265, height=30)
 
         self.attendance_portal_header_lb.place(x=0, y=0, width=620, height=30)
 
@@ -2110,14 +2160,15 @@ class AttendanceMgmt(MainFrame):
                                 cv2.FONT_HERSHEY_COMPLEX, 0.8, (255, 255, 255),
                                 3)
                     cv2.imshow("Taking Attendance", img)
-                    cv2.waitKey(1800)
+                    cv2.waitKey(1000)
                     if str(id) == employee_id:
                         try:
                             cursor.execute("""
                                     INSERT INTO attendance (employee_id,
                                     attendance_type, location, date, time)
                                     VALUES (?, ?, ?, ?, ?)""",
-                                           (employee_id, attendance_type, location, date, time_stamp))
+                                           (employee_id, attendance_type,
+                                            location, date, time_stamp))
                             conn.commit()
                             messagebox.showinfo('Attendance',
                                                 f'Attendance for {employee_name} marked successfully!')
@@ -2138,10 +2189,6 @@ class AttendanceMgmt(MainFrame):
                     cv2.putText(img, 'Unknown', (x, y + h), cv2.FONT_HERSHEY_COMPLEX,
                                 0.8, (255, 255, 255), 3)
                     cv2.imshow("Taking Attendance", img)
-                    # if (datetime.now() - count).total_seconds() < 100:
-                    #     messagebox.showerror('Time Out',
-                    #                          'Face not recognized!')
-                    #     return None, FalseFace
                 coordinate = [x, y, w, h]
                 conn.close()
             return coordinate, attendance_marked
@@ -2287,17 +2334,15 @@ class AttendanceMgmt(MainFrame):
         self.after_id = frame.after(1000, self.update_time, frame)
 
     def return_to_dashboard(self):
-        self.attendance_mgmt_fm.destroy()  # Destroy the current frame
+        self.attendance_mgmt_fm.destroy()
         Dashboard(self.root, self.employeeID, self.is_admin)
 
 
-class EmployeeMgmt(MainFrame):
+class EmployeeManagement(MainFrame):
     def __init__(self, root, employeeID, is_admin=False):
         super().__init__(root)
         self.employeeID = employeeID
         self.is_admin = is_admin
-
-        # Variable
         self.var_empID = StringVar()
         self.var_name = StringVar()
         self.var_nric = StringVar()
@@ -2317,7 +2362,7 @@ class EmployeeMgmt(MainFrame):
         self.var_marital_status = StringVar()
         self.var_country = StringVar()
         self.var_com_text_search = StringVar()
-        self.var_txt_search = StringVar()
+        self.var_text_search = StringVar()
         self.var_is_admin = IntVar()
 
         self.employee_mgmt_fm = Frame(self.root, highlightbackground=BG_COLOR,
@@ -2591,7 +2636,6 @@ class EmployeeMgmt(MainFrame):
                                      fg='dark red', variable=self.var_is_admin)
         is_admin_entry.place(x=948, y=380)
 
-        # face id frame
         self.enrolment_status_lb = Label(self.face_id_fm, text='Enrolment Status:\nNot Enrolled',
                                          font=('Calibri', 15, 'bold'), fg='black')
         self.enrolment_status_lb.place(x=30, y=20)
@@ -2615,7 +2659,6 @@ class EmployeeMgmt(MainFrame):
                                  bg=BG_COLOR, fg=FG_COLOR, command=self.train_images)
         confirm_img_btn.place(x=25, y=300, width=170, height=45)
 
-        # employee table frame
         self.search_fm = LabelFrame(self.table_fm, bd=3, relief=RIDGE,
                                     text='Search Employee',
                                     font=('Calibri', 10, 'bold'),
@@ -2637,7 +2680,7 @@ class EmployeeMgmt(MainFrame):
         txt_search_entry = ttk.Entry(self.search_fm, width=40,
                                      font=('Calibri', 11, 'bold'),
                                      justify=LEFT,
-                                     textvariable=self.var_txt_search)
+                                     textvariable=self.var_text_search)
         txt_search_entry.grid(row=0, column=2, padx=5)
 
         search_btn = Button(self.search_fm, text='Search', font=('Calibri', 11, 'bold'),
@@ -2648,7 +2691,6 @@ class EmployeeMgmt(MainFrame):
                               width=14, bg=BG_COLOR, fg=FG_COLOR, command=self.fetch_data)
         show_all_btn.grid(row=0, column=4, padx=5)
 
-        # Employee Table
         self.employee_table_fm = Frame(self.table_fm, bd=3, relief=RIDGE)
         self.employee_table_fm.place(x=0, y=55, width=1321, height=89)
 
@@ -3016,7 +3058,7 @@ class EmployeeMgmt(MainFrame):
     # Search
     def search_table(self):
         search_option = self.var_com_text_search.get()
-        search_value = self.var_txt_search.get()
+        search_value = self.var_text_search.get()
         if search_option == 'Search Option':
             messagebox.showerror('Error', 'Please select option.')
         elif search_value == '':
@@ -3311,8 +3353,9 @@ class ResetPassword(MainFrame):
 
 if __name__ == "__main__":
     db_file = "employees.db"
-    initiaze_db = InitiateDatabase(db_file)
-    initiaze_db.create_tables()
+    initiate_db = InitiateDatabase(db_file)
+    initiate_db.create_tables()
     root = Tk()
     app = LoginApp(root)
     root.mainloop()
+
