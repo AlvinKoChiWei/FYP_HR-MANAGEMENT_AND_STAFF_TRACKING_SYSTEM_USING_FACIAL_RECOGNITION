@@ -1,6 +1,6 @@
 import glob
 from tkinter import *
-from tkinter import messagebox, ttk, Checkbutton, IntVar
+from tkinter import messagebox, ttk, Checkbutton, IntVar, END
 import sqlite3
 import bcrypt
 import pytz
@@ -32,6 +32,7 @@ FONT_BOLD_27 = ('Calibri', 27, 'bold')
 
 BG_COLOR = '#273b7a'
 FG_COLOR = 'white'
+
 
 class InitiateDatabase:
     def __init__(self, db_file):
@@ -599,9 +600,9 @@ class PayrollManagement(MainFrame):
         self.month_lb.place(x=425, y=40)
 
         self.combo_month = ttk.Combobox(self.employee_salary_fm,
-                                   font=('Calibri', 14),
-                                   width=17, state='readonly',
-                                   textvariable=self.var_salary_month)
+                                        font=('Calibri', 14),
+                                        width=17, state='readonly',
+                                        textvariable=self.var_salary_month)
         self.combo_month['value'] = ('Select Month', 'Jan', 'Feb', 'Mar', 'Apr', 'May',
                                      'Jun', 'Jul', 'Aug', 'Sept', 'Oct',
                                      'Nov', 'Dec')
@@ -619,9 +620,9 @@ class PayrollManagement(MainFrame):
         self.year_lb.place(x=265, y=40)
 
         self.combo_year = ttk.Combobox(self.employee_salary_fm,
-                                  font=('Calibri', 14),
-                                  width=17, state='readonly',
-                                  textvariable = self.var_salary_year)
+                                       font=('Calibri', 14),
+                                       width=17, state='readonly',
+                                       textvariable=self.var_salary_year)
         self.combo_year['value'] = ('Select Year', '2023', '2024', '2025', '2026', '2027', '2028')
         self.combo_year.current(0)
         self.combo_year.place(x=310, y=40, width=110, height=30)
@@ -803,7 +804,7 @@ class PayrollManagement(MainFrame):
         self.nett_pay_entry.place(x=440, y=440, width=160, height=30)
 
         save_pdf_btn = Button(self.employee_salary_fm, text='Save as PDF', font=FONT_BOLD_18,
-                           bg=BG_COLOR, fg=FG_COLOR, command=self.generate_pdf)
+                              bg=BG_COLOR, fg=FG_COLOR, command=self.generate_pdf)
 
         calculate_btn = Button(self.employee_salary_fm, text='Calculate', font=FONT_BOLD_18,
                                bg='dark green', fg=FG_COLOR, command=self.calculate_pay)
@@ -842,8 +843,8 @@ class PayrollManagement(MainFrame):
             return
 
         payroll_id, employee_id, name, salary_month, salary_year, pay_date, working_days, current_basic, \
-        overtime_charge, allowance, incentives, bonus, advanced_pay, advanced_deductions, unpaid_leave_deductions, \
-        late_deductions, gross_pay, total_deductions, nett_pay = payroll_data
+            overtime_charge, allowance, incentives, bonus, advanced_pay, advanced_deductions, unpaid_leave_deductions, \
+            late_deductions, gross_pay, total_deductions, nett_pay = payroll_data
 
         with sqlite3.connect('employees.db') as conn:
             cursor = conn.cursor()
@@ -1330,7 +1331,7 @@ class LeaveManagement(MainFrame):
 
         self.table_fm.place(x=0, y=30, width=618, height=453)
 
-        self.search_fm = Frame(self.leave_report_fm,  highlightbackground='#008080',
+        self.search_fm = Frame(self.leave_report_fm, highlightbackground='#008080',
                                highlightthickness=1)
         self.search_fm.place(x=0, y=483, width=618, height=45)
 
@@ -1369,7 +1370,7 @@ class LeaveManagement(MainFrame):
         scroll_y = ttk.Scrollbar(self.table_fm, orient=VERTICAL)
         self.leave_table = ttk.Treeview(self.table_fm,
                                         column=('leave_id', 'employee_id', 'name',
-                                                'leave_type', 'apply_date','start_date',
+                                                'leave_type', 'apply_date', 'start_date',
                                                 'end_date', 'reason', 'status'),
                                         xscrollcommand=scroll_x.set,
                                         yscrollcommand=scroll_y.set)
@@ -1452,7 +1453,7 @@ class LeaveManagement(MainFrame):
         self.show_leave_balance_lb = Label(self.leave_application_fm,
                                            font=('Calibri', 16, 'bold'), fg='black', justify=CENTER)
         self.show_leave_balance_lb.place(x=230, y=180)
-        self.show_leave_balance_lb.config(text = self.show_leave_balance())
+        self.show_leave_balance_lb.config(text=self.show_leave_balance())
 
         self.leave_type_lb = Label(self.leave_application_fm, text='Types of Leave',
                                    font=('Calibri', 16, 'bold'), fg='black', justify=CENTER)
@@ -1482,7 +1483,7 @@ class LeaveManagement(MainFrame):
                                  )
         self.end_date_lb.place(x=50, y=300)
 
-        self.end_date_entry = DateEntry(self.leave_application_fm,  width=17,
+        self.end_date_entry = DateEntry(self.leave_application_fm, width=17,
                                         background='gray', foreground='black',
                                         borderwidth=1, date_pattern='dd-mm-yyyy',
                                         font=('Calibri', 16), textvariable=self.var_end_date)
@@ -1580,6 +1581,15 @@ class LeaveManagement(MainFrame):
             self.var_end_date.set(data[6])
             self.var_reason.set(data[7])
             self.var_status.set(data[8])
+        with sqlite3.connect('employees.db') as conn:
+            cursor = conn.cursor()
+            results = cursor.execute(
+                'SELECT annual_leave_balance, sick_leave_balance FROM leave_balance WHERE employee_id = ?',
+                (self.var_empID.get(),)).fetchone()
+            if results:
+                annual_leave, sick_leave = results
+                formatted_result = f'AL: {annual_leave} days\tSL: {sick_leave} days'
+            self.show_leave_balance_lb.config(text=formatted_result)
 
     def load_leave_report(self):
         with sqlite3.connect('employees.db') as conn:
@@ -1943,8 +1953,8 @@ class LeaveManagement(MainFrame):
         self.start_date_entry.delete(0, END)
         self.end_date_entry.delete(0, END)
         self.var_apply_date.set(self.get_current_date())
-        self.var_leave_balance.set(self.show_leave_balance())
         self.var_status.set('')
+        self.show_leave_balance_lb.config(text=self.show_leave_balance())
 
     def return_to_dashboard(self):
         self.leave_mgmt_fm.destroy()
@@ -2132,6 +2142,18 @@ class AttendanceManagement(MainFrame):
             messagebox.showerror('Location Not Selected',
                                  'Please select a working location first.')
             return
+
+        with sqlite3.connect('employees.db') as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT face_id
+                FROM employees
+                WHERE employee_id = ?""",
+                           (self.employeeID,))
+            enrolment_status = cursor.fetchone()
+            if enrolment_status and enrolment_status[0] == 'Not Enrolled':
+                messagebox.showerror('Error', 'Data Missing! Please register Face ID!')
+                return
 
         def draw_boundary(img, classifier, scaleFactor, minNeighbours, color, text, clf):
             attendance_marked = False
@@ -2940,6 +2962,30 @@ class EmployeeManagement(MainFrame):
             messagebox.showerror('Invalid Relationship',
                                  'Please select emergency contact relationship!')
             return
+        elif not self.var_empID.get().isdigit():
+            messagebox.showerror('Invalid Employee ID', 'Employee ID must be a number!')
+            return
+        elif not self.var_contact.get().isdigit():
+            messagebox.showerror('Invalid Contact', 'Contact number must be a number!')
+            return
+        elif not self.var_emergency_contact.get().isdigit():
+            messagebox.showerror('Invalid Emergency Contact', 'Emergency contact number must be a number!')
+            return
+        elif not self.var_salary.get().replace(".", "", 1).isdigit():
+            messagebox.showerror('Invalid Salary', 'Salary must be a number!')
+            return
+        elif not self.var_annual_leave.get().replace(".", "", 1).isdigit():
+            messagebox.showerror('Invalid Annual Leave', 'Annual leave must be a number!')
+            return
+        elif not self.var_sick_leave.get().replace(".", "", 1).isdigit():
+            messagebox.showerror('Invalid Sick Leave', 'Sick leave must be a number!')
+            return
+        elif int(self.var_sick_leave.get()) > 60:
+            messagebox.showerror('Invalid Sick Leave', 'Sick leave cannot be greater than 60 days!')
+            return
+        elif int(self.var_annual_leave.get()) > 30:
+            messagebox.showerror('Invalid Annual Leave', 'Annual leave cannot be greater than 60 days!')
+            return
         else:
             try:
                 if self.var_is_admin.get() == 1:
@@ -3031,7 +3077,6 @@ class EmployeeManagement(MainFrame):
                     with sqlite3.connect('employees.db') as conn:
                         cursor = conn.cursor()
 
-                        # Retrieve the employee_name before deletion
                         cursor.execute("SELECT name "
                                        "FROM employees "
                                        "WHERE employee_id = ?", (self.var_empID.get(),))
@@ -3040,6 +3085,8 @@ class EmployeeManagement(MainFrame):
                             employee_name = row[0]
 
                             cursor.execute('DELETE FROM employees WHERE employee_id = ?',
+                                           (self.var_empID.get(),))
+                            cursor.execute('DELETE FROM leave_balance WHERE employee_id = ?',
                                            (self.var_empID.get(),))
                             conn.commit()
 
@@ -3171,6 +3218,30 @@ class EmployeeManagement(MainFrame):
             messagebox.showerror('Invalid Relationship',
                                  'Please select emergency contact relationship!')
             return
+        elif not self.var_empID.get().isdigit():
+            messagebox.showerror('Invalid Employee ID', 'Employee ID must be a number!')
+            return
+        elif not self.var_contact.get().isdigit():
+            messagebox.showerror('Invalid Contact', 'Contact number must be a number!')
+            return
+        elif not self.var_emergency_contact.get().isdigit():
+            messagebox.showerror('Invalid Emergency Contact', 'Emergency contact number must be a number!')
+            return
+        elif not self.var_salary.get().replace(".", "", 1).isdigit():
+            messagebox.showerror('Invalid Salary', 'Salary must be a number!')
+            return
+        elif not self.var_annual_leave.get().replace(".", "", 1).isdigit():
+            messagebox.showerror('Invalid Annual Leave', 'Annual leave must be a number!')
+            return
+        elif not self.var_sick_leave.get().replace(".", "", 1).isdigit():
+            messagebox.showerror('Invalid Sick Leave', 'Sick leave must be a number!')
+            return
+        elif int(self.var_sick_leave.get()) > 60:
+            messagebox.showerror('Invalid Sick Leave', 'Sick leave cannot be greater than 60 days!')
+            return
+        elif int(self.var_annual_leave.get()) > 30:
+            messagebox.showerror('Invalid Annual Leave', 'Annual leave cannot be greater than 60 days!')
+            return
         else:
             try:
                 update = messagebox.askyesno('Update Data', 'Updating Employee Data:\n'
@@ -3224,7 +3295,6 @@ class EmployeeManagement(MainFrame):
         cursor_row = self.employee_table.focus()
         content = self.employee_table.item(cursor_row)
         data = content['values']
-
         self.var_empID.set(data[0])
         self.var_name.set(data[1])
         self.var_nric.set(data[2])
@@ -3235,8 +3305,12 @@ class EmployeeManagement(MainFrame):
         self.var_address.set(data[7])
         self.var_join_date.set(data[8])
         self.var_salary.set(data[9])
-        self.var_annual_leave.set(data[10])
-        self.var_sick_leave.set(data[11])
+        annual_leave_float = float(data[10])
+        self.var_annual_leave.set(
+            int(annual_leave_float) if annual_leave_float == int(annual_leave_float) else annual_leave_float)
+        sick_leave_float = float(data[11])
+        self.var_sick_leave.set(
+            int(sick_leave_float) if sick_leave_float == int(sick_leave_float) else sick_leave_float)
         self.var_gender.set(data[12])
         self.var_marital_status.set(data[13])
         self.var_emergency_name.set(data[14])
@@ -3358,4 +3432,3 @@ if __name__ == "__main__":
     root = Tk()
     app = LoginApp(root)
     root.mainloop()
-
