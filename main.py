@@ -179,9 +179,9 @@ class LoginApp(MainFrame):
             result = cursor.fetchone()
 
         if result:
-            name, hashed_password, is_admin = result  # Correctly unpack the result
+            name, hashed_password, is_admin = result  
             if self.verify_password(hashed_password, password):
-                messagebox.showinfo('Success', f'Welcome!\n\n{name}')  # Use the fetched name
+                messagebox.showinfo('Success', f'Welcome!\n\n{name}') 
                 self.login_page_fm.destroy()
                 self.root.update()
                 Dashboard(self.root, employeeID, is_admin)
@@ -1115,11 +1115,9 @@ class PayrollManagement(MainFrame):
         else:
             overtime_charge = 0.0
 
-        # Calculate unpaid leave deductions (rounded to 2 decimal places)
         daily_rate = float(basic) / float(working_days)
         unpaid_leave_deductions = round(daily_rate * float(unpaid_leave_deductions), 2)
 
-        # Calculate late deductions (rounded to 2 decimal places)
         late_deductions = round(hourly_basic_rate * 0.5 * float(late_deductions), 2)
 
         with sqlite3.connect('employees.db') as conn:
@@ -2243,7 +2241,7 @@ class AttendanceManagement(MainFrame):
         while True:
             ret, img = cam.read()
             img = recognize(img, clf, face_cascade)
-            if img is None:  # Added this condition
+            if img is None:
                 break
             cv2.imshow("Taking Attendance", img)
             if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -3102,7 +3100,7 @@ class EmployeeManagement(MainFrame):
             except Exception as es:
                 messagebox.showerror('Error', f'Due To: {str(es)}', parent=self.root)
 
-    # Search
+   
     def search_table(self):
         search_option = self.var_com_text_search.get()
         search_value = self.var_text_search.get()
